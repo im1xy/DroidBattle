@@ -1,21 +1,30 @@
 package droids;
+import java.util.Random;
 
 public class Knight extends Droid {
-    SwordsMan(String name) {
-        this.setClassName("SwordsMan");
-        this.setName(name);
-        this.setHp(7);
-        this.setArmor(6);
+    public Knight() {
+        this.setClassName("Knight");
+        this.setName("Geralt");
+        this.setHp(1000);
         this.setEnergy(200);
-        this.setDamage(0);
-        this.setCriticalHit(5);
-        this.setCriticalHitChance(20);
+        this.setEnergyOnBlock(40);
+        this.setDamage(200);
+        this.setAvoidSaveHp(100);
         this.setAvoidChance(10);
+        this.setSkillType("Increase Damage");
     }
 
     @Override
     public void attack(Droid otherDroid) {
         super.attack(otherDroid);
+    }
+
+    @Override
+    public void useSkill() {
+        int additionalDamage = new Random().nextInt(201);
+        this.setDamage(this.getDamage() + additionalDamage);
+        System.out.println("Урон " + this.getName() + " було збільшено на " + additionalDamage);
+        System.out.println("Новий показник урону " + this.getName() + ": " + this.getDamage());
     }
 
     @Override

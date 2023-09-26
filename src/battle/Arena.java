@@ -1,14 +1,17 @@
 package battle;
-import droids.*;
 
+import droids.*;
+import App.UI;
+
+import java.io.Serializable;
 import java.util.Random;
 
-public class ArenaTeamVsTeam implements UI{
-    int rounds;
-    Team firstTeam;
-    Team secondTeam;
+public class Arena implements UI, Serializable {
+    private int rounds;
+    private Team firstTeam;
+    private Team secondTeam;
 
-    public ArenaTeamVsTeam(Team firstTeam, Team secondTeam) {
+    public Arena(Team firstTeam, Team secondTeam) {
         this.rounds = 0;
         this.firstTeam = firstTeam;
         this.secondTeam = secondTeam;
@@ -17,18 +20,18 @@ public class ArenaTeamVsTeam implements UI{
     public void startArena() {
         Random random = new Random();
 
-        Droid firstDroid = null;
-        int firstDroidAction = 0;
-        Droid secondDroid = null;
-        int secondDroidAction = 0;
-
         if (random.nextInt(101) >= 50)
             this.swapTeams();
 
         System.out.println("Бій починає команда " + this.getFirstTeam().getName());
         System.out.println("Після КОЖНОГО раунду початкова команда змінюється на протилежну!");
+        this.resumeArena();
+    }
 
-        while (this.firstTeam.isAlive() && this.secondTeam.isAlive()) {
+    public void resumeArena() {
+        Droid firstDroid, secondDroid;
+
+        while (this.getFirstTeam().isAlive() && this.getSecondTeam().isAlive()) {
             this.setRounds(this.getRounds() + 1);
             System.out.println("|--------------------РАУНД №" + this.getRounds() + "----------------------|");
 
@@ -38,39 +41,41 @@ public class ArenaTeamVsTeam implements UI{
             secondDroid = this.chooseDroid(this.getSecondTeam());
 
             System.out.println("\t" + this.getFirstTeam().getName() + " Оберіть ДІЮ для " + firstDroid.getName());
-            firstDroidAction = this.droidAction(firstDroid);
+            firstDroid.chooseDroidAction();
             System.out.println("\t" + this.getSecondTeam().getName() + " Оберіть дію для " + secondDroid.getName());
-            secondDroidAction = this.droidAction(secondDroid);
+            secondDroid.chooseDroidAction();
 
             System.out.println("\t\t ### РЕЗУЛЬТАТИ РАУНДУ ###");
-            startHalfRound(firstDroid, firstDroidAction, secondDroid, secondDroidAction);
-            startHalfRound(secondDroid, secondDroidAction, firstDroid, firstDroidAction);
+            System.out.println(getFirstTeam().getName());
+            firstDroid.makeMove(secondDroid);
+            System.out.println(getSecondTeam().getName());
+            secondDroid.makeMove(firstDroid);
+
+            firstDroid.setUsedAction(0);
+            secondDroid.setUsedAction(0);
 
             swapTeams();
+
+            if (this.pauseArena() == 1)
+                return;
         }
-
-
+        this.printBattleResults();
     }
 
-    public void startHalfRound(Droid firstDroid, int firstDroidAction, Droid secondDroid, int secondDroidAction) {
-        if (firstDroidAction == 1) {
-            if (secondDroidAction != 2)
-            {
-                firstDroid.attack(secondDroid);
-                System.out.println(firstDroid.getName() + " наніс урон " + secondDroid.getName());
-            }
-            else
-                System.out.println(firstDroid.getName() + " не наніс урону " + secondDroid.getName());
+    public int pauseArena() {
+        int choice;
+        System.out.println("ВИЙТИ У МЕНЮ (1 - Так, 2 - Ні): ");
+        choice = this.scanner.nextInt();
+
+        while (choice < 1 || choice > 2) {
+            System.out.println("Помилка! Підтвердіть ваш Вибір: ");
+            choice = this.scanner.nextInt();
         }
-        else
-        {
-            firstDroid.block();
-            System.out.println(firstDroid.getName() + " поставив БЛОК");
-        }
-        System.out.println("Залишок здоров'я " + secondDroid.getName() + " = " + secondDroid.getHp());
+
+        return choice;
     }
 
-    public void printBattleResults() {
+    private void printBattleResults() {
         System.out.println("|--------------------РЕЗУЛЬТАТИ МАТЧУ--------------------|");
         if (!this.getFirstTeam().isAlive() && !this.getSecondTeam().isAlive())
             System.out.println("Результати бою: НІЧИЯ");
@@ -81,39 +86,17 @@ public class ArenaTeamVsTeam implements UI{
                 System.out.print(this.getFirstTeam().getName());
             else
                 System.out.print(this.getSecondTeam().getName());
+            System.out.print(" \uD83C\uDFC6 \n");
         }
-        System.out.print(" \uD83C\uDFC6");
         System.out.println("Кількість Раундів - " + this.getRounds());
     }
 
-    public int droidAction(Droid droid) {
-        int choice = 0;
+    private Droid chooseDroid(Team team) {
+        int choice;
+        Droid chosenDroid;
 
-        while (choice < 1 || choice > 2) {
-            System.out.println(
-                            """
-                            1 - Атака
-                            2 - Блок
-                            """
-            );
-            System.out.print("Ваш Вибір: ");
-            choice = this.scanner.nextInt();
-
-            if (choice == 2 && !droid.isBlockPossible()) {
-                System.out.println("Поставити блок не можливо. У Дроїда " + droid.getName() + " недостатньо енергії.");
-                choice = 0;
-            }
-        }
-
-        return choice;
-    }
-
-    public Droid chooseDroid(Team team) {
-        int choice = 0;
-        Droid chosenDroid = null;
-
+        System.out.println(team);
         while (true) {
-            System.out.println(team);
             System.out.print("Ваш вибір (ID у команді): ");
             choice = this.scanner.nextInt();
 
@@ -126,12 +109,12 @@ public class ArenaTeamVsTeam implements UI{
             chosenDroid = team.getTeamList().get(choice - 1);
             if (chosenDroid.isAlive())
                 return chosenDroid;
-            else
-                System.out.println("ПОМИЛКА! Обраний Дроїд ПОМЕР, більше обрати його неможливо!");
+
+            System.out.println("ПОМИЛКА! Обраний Дроїд ПОМЕР, більше обрати його неможливо!");
         }
     }
 
-    public void swapTeams() {
+    private void swapTeams() {
         Team temp = this.getSecondTeam();
         this.setSecondTeam(this.getFirstTeam());
         this.setFirstTeam(temp);
@@ -139,7 +122,7 @@ public class ArenaTeamVsTeam implements UI{
 
     @Override
     public int confirmChoice() {
-        int choice = 0;
+        int choice;
 
         System.out.println("Ви впевнені у виборі? (1 - Так, 2 - Ні): ");
         choice = this.scanner.nextInt();

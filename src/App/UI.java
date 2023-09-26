@@ -1,9 +1,8 @@
-package battle;
+package App;
 
 import java.util.Scanner;
 
-interface UI {
+public interface UI {
     Scanner scanner = new Scanner(System.in);
     int confirmChoice();
-
 }
